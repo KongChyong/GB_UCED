@@ -1,0 +1,28 @@
+﻿* AIMMS
+always_store_constraint_levels 1
+always_store_marginals 1
+do_postsolve_after_interrupt on
+MIP_absolute_optimality_tolerance 1e-06
+MIP_calculate_sensitivity_information on
+MIP_relative_optimality_tolerance 0.001
+postsolve on
+postsolve_integer_variables round_to_integer
+progress_solution 1
+progress_time_interval 1
+* AOA
+* CBC 2.9
+* CONOPT 4.1
+* CPLEX 20.1
+* CPOptimizer 20.1
+* GUROBI 9.5
+* IPOPT 3.11
+* MINOS
+* ODH-CPLEX 5.3
+* PATH 4.7
+* SNOPT 7.2
+* CPLEX 12.7.1
+"CPLEX 12.7.1".MIP_start_algorithm 6
+"CPLEX 12.7.1".global_thread_limit 16
+* NETSOL
+* Environment
+Data_Management_Style 1

@@ -1,0 +1,1670 @@
+## ams_version=1.0
+
+Model Main_UnitComm {
+	Section GENERAL {
+		DeclarationSection sets {
+			Set Time {
+				Index: t, tt;
+				Definition: {
+					{1..100}
+					!{1..720}
+					!{1..360} !
+					!{1..180}  !
+					!{1..48} !
+					!{1..10247}
+				}
+			}
+			Set RollHorizon {
+				Index: hr, hrr;
+				Definition: {
+					data {r1..r147}
+					!data {r1..r21}
+					!data {r1..r82}
+					!data {r1..r302}
+					!data {r19..r147}
+				}
+			}
+			Set Generators {
+				Index: j, jj;
+				Definition: {
+					!{1..114}
+				}
+			}
+			Set Nodes {
+				Index: n, nn;
+				Definition: {
+					{1..8}
+				}
+			}
+			Set Scenarios {
+				Index: z, zz;
+				Definition: {
+					data {z1..z7}
+					!data {baseline_2025}
+				}
+			}
+			Set Months {
+				Index: m, mm;
+				Definition: data{M1..M12};
+			}
+		}
+		DeclarationSection DEMAND_PARAMETERS {
+			Parameter ND {
+				IndexDomain: (t);
+				Range: nonnegative;
+			}
+			Parameter ND_H {
+				IndexDomain: (t,hr);
+				Range: free;
+				Definition: {
+					[GAS_TS_H(t,hr)+COAL_TS_H(t,hr)+OIL_TS_H(t,hr)+WIND_TS_H(t,hr)+HYDRO_TS_H(t,hr)+NUCLEAR_TS_H(t,hr)+INTERCONN_FLOW_H(t,hr)]
+					
+					+WIND_EMB_H(t,hr)+SOLAR_EMB_H(t,hr)
+					
+					+[BIOMASS_TS_H(t,hr)+PS_DISCHARGE_H(t,hr)-PS_CHARGE_H(t,hr)]
+					
+					+[CHP_GEN*(1-0.0171)+NON_BIOMASS_THERM_RES*(1-0.1317)+OIL_EMB*(1-0.0917)+OTHER_GEN*(1-0.0726)]
+				}
+			}
+			Parameter RD {
+				IndexDomain: t;
+			}
+			Parameter RD_H {
+				IndexDomain: (t,hr);
+				Range: free;
+				Definition: {
+					ND_H(t,hr)*DEMAND_SCL_FACTOR
+					
+					-[OIL_TS_H(t,hr)*OIL_SCL_FACTOR+WIND_TS_H(t,hr)*WIND_SCL_FACTOR+HYDRO_TS_H(t,hr)*HYDRO_SCL_FACTOR+NUCLEAR_TS_H(t,hr)*NUCLEAR_SCL_FACTOR]
+					
+					-[WIND_EMB_H(t,hr)*WIND_SCL_FACTOR+SOLAR_SCL_FACTOR*SOLAR_EMB_H(t,hr)]
+					
+					-[BIOMASS_TS_H(t,hr)*BIOMASS_SCL_FACTOR]
+					
+					-[CHP_GEN*(1-0.0171)*CHP_SCL_FACTOR+NON_BIOMASS_THERM_RES*(1-0.1317)*OTHER_RES_SCL_FACTOR+OIL_EMB*(1-0.0917)*OIL_SCL_FACTOR+OTHER_GEN*(1-0.0726)]
+				}
+			}
+			Parameter OPERATING_RESERVE_UP {
+				IndexDomain: (t);
+				Definition: (3*(([ND_FORECAST_ERR(t)]^2 + [WIND_FORECAST_ERR(t)*[WIND_TS(t)+WIND_EMB(t)]*WIND_SCL_FACTOR]^2)^0.5) + max(j|EXOG_PLANTS(j)=0,CAPACITY(j)));
+			}
+			Parameter OPERATING_RESERVE_DOWN {
+				IndexDomain: (t);
+				Definition: OPERATING_RESERVE_UP(t)*0.5;
+			}
+			Parameter ND_FORECAST_ERR {
+				IndexDomain: t;
+			}
+			Parameter ND_FORECAST_ERR_H {
+				IndexDomain: (t,hr);
+			}
+			Parameter WIND_FORECAST_ERR {
+				IndexDomain: t;
+			}
+			Parameter WIND_FORECAST_ERR_H {
+				IndexDomain: (t,hr);
+			}
+			Parameter TRANSM_LOSSES;
+			Parameter DEMAND;
+		}
+		DeclarationSection EXOG_GENERATION_PARAMETERS {
+			Parameter GAS_TS {
+				IndexDomain: t;
+			}
+			Parameter GAS_TS_H {
+				IndexDomain: (t,hr);
+			}
+			Parameter COAL_TS {
+				IndexDomain: t;
+			}
+			Parameter COAL_TS_H {
+				IndexDomain: (t,hr);
+			}
+			Parameter OIL_TS {
+				IndexDomain: t;
+			}
+			Parameter OIL_TS_H {
+				IndexDomain: (t,hr);
+			}
+			Parameter WIND_TS {
+				IndexDomain: (t);
+				Range: nonnegative;
+			}
+			Parameter WIND_TS_H {
+				IndexDomain: (t,hr);
+				Range: nonnegative;
+			}
+			Parameter WIND_EMB {
+				IndexDomain: (t);
+				Range: nonnegative;
+			}
+			Parameter WIND_EMB_H {
+				IndexDomain: (t,hr);
+				Range: nonnegative;
+			}
+			Parameter SOLAR_EMB {
+				IndexDomain: (t);
+				Range: nonnegative;
+			}
+			Parameter SOLAR_EMB_H {
+				IndexDomain: (t,hr);
+				Range: nonnegative;
+			}
+			Parameter HYDRO_TS {
+				IndexDomain: (t);
+			}
+			Parameter HYDRO_TS_H {
+				IndexDomain: (t,hr);
+			}
+			Parameter INTERCONN_FLOW {
+				IndexDomain: t;
+			}
+			Parameter INTERCONN_FLOW_H {
+				IndexDomain: (t,hr);
+			}
+			Parameter NUCLEAR_TS {
+				IndexDomain: (t);
+			}
+			Parameter NUCLEAR_TS_H {
+				IndexDomain: (t,hr);
+			}
+			Parameter BIOMASS_TS {
+				IndexDomain: (t);
+			}
+			Parameter BIOMASS_TS_H {
+				IndexDomain: (t,hr);
+			}
+			Parameter PS_CHARGE {
+				IndexDomain: t;
+			}
+			Parameter PS_CHARGE_H {
+				IndexDomain: (t,hr);
+			}
+			Parameter PS_DISCHARGE {
+				IndexDomain: t;
+			}
+			Parameter PS_DISCHARGE_H {
+				IndexDomain: (t,hr);
+			}
+			Parameter CHP_GEN {
+				Definition: {
+					14.04301/8760*1000000 ! 2015 see data appendix for this one
+				}
+				Comment: "other as reported in DUKES 5.6, tWH";
+			}
+			Parameter NON_BIOMASS_THERM_RES {
+				Definition: {
+					16.79629/8760*1000000 ! 2015 see data appendix for this one
+				}
+				Comment: "Non biomass thermal RES as reported in DUKES 5.6, MWh";
+			}
+			Parameter OIL_EMB {
+				Definition: {
+					2.03416/8760*1000000 ! see data appendix for this one
+				}
+				Comment: "DISTRIBUTION CONNECTED OIL GENERATION, as reported in DUKES 5.6, MWh";
+			}
+			Parameter OTHER_GEN {
+				Definition: {
+					4.63642/8760*1000000 ! 2015 see data appendix for this one
+				}
+				Comment: "other as reported in DUKES 5.6, MWh";
+			}
+		}
+		DeclarationSection THERMAL_GENERATION_PARAMETERS {
+			Parameter CAPACITY {
+				IndexDomain: (j);
+			}
+			Parameter GEN_TYPE {
+				IndexDomain: (j);
+			}
+			Parameter GEN_TECH {
+				IndexDomain: (j);
+			}
+			Parameter EXOG_PLANTS {
+				IndexDomain: j;
+			}
+			Parameter THERMAL_EFFICIENCY {
+				IndexDomain: j| GEN_TYPE(j) = 1;
+			}
+			Parameter HEATRATE {
+				IndexDomain: (j)| GEN_TYPE(j) = 1;
+				Range: nonnegative;
+				Definition: 1/THERMAL_EFFICIENCY(j);
+			}
+			Parameter STARTRAMPFACTOR {
+				IndexDomain: (j)| GEN_TYPE(j) = 1;
+			}
+			Parameter SHUTRAMPFACTOR {
+				IndexDomain: (j)| GEN_TYPE(j) = 1;
+			}
+			Parameter RAMPUPFACTOR {
+				IndexDomain: (j)| GEN_TYPE(j) = 1;
+			}
+			Parameter RAMPDOWNFACTOR {
+				IndexDomain: (j)| GEN_TYPE(j) = 1;
+			}
+			Parameter STARTUP_RAMP {
+				IndexDomain: (j)| GEN_TYPE(j) = 1;
+				Definition: STARTRAMPFACTOR(j)*CAPACITY(j);
+			}
+			Parameter SHUTDOWN_RAMP {
+				IndexDomain: (j)| GEN_TYPE(j) = 1;
+				Definition: SHUTRAMPFACTOR(j)*CAPACITY(j);
+			}
+			Parameter MAX_RAMPUP {
+				IndexDomain: (j)| GEN_TYPE(j) = 1;
+				Definition: RAMPUPFACTOR(j)*CAPACITY(j);
+			}
+			Parameter MAX_RAMPDOWN {
+				IndexDomain: (j)| GEN_TYPE(j) = 1;
+				Definition: RAMPDOWNFACTOR(j) * CAPACITY(j);
+			}
+			Parameter MAXP_FACTOR {
+				IndexDomain: (j)| GEN_TYPE(j) = 1;
+			}
+			Parameter MINP_FACTOR {
+				IndexDomain: (j)| GEN_TYPE(j) = 1;
+			}
+			Parameter MAX_POWER_OUT {
+				IndexDomain: (j)| GEN_TYPE(j) = 1;
+				Definition: MAXP_FACTOR(j)*CAPACITY(j);
+			}
+			Parameter MIN_POWER_OUT {
+				IndexDomain: (j)| GEN_TYPE(j) = 1;
+				Definition: MINP_FACTOR(j)*CAPACITY(j);
+			}
+			Parameter CARBON_INTENSITY {
+				IndexDomain: (j);
+			}
+			Parameter PARASITIC_LOAD {
+				IndexDomain: j;
+				Definition: 0;
+				Comment: {
+					"if GEN_TECH(j)=1 then 0.104  else !parasitic load for biomass
+					if GEN_TECH(j)=2 then 0.0171 else !parasitic load for CCGT
+					if GEN_TECH(j)=3 then 0.0513 else !parasitic load for Coal
+					if GEN_TECH(j)=4 then 0.1339 else !parasitic load for diesel/oil etc.
+					if GEN_TECH(j)=5 then 0.0917 else !parasitic load for Nuclear
+					if GEN_TECH(j)=9 then 0.0171 !parasitic load for CHP=CCGTs
+					
+					endif
+					endif
+					endif
+					endif
+					endif
+					endif;"
+				}
+			}
+			Parameter DERATED_FACTOR {
+				IndexDomain: j;
+				Definition: {
+					if GEN_TECH(j)=1 then 0.6402*(1/(1-PARASITIC_LOAD(j)))*1.002176917  else !derated factor for biomass is 0.8786 but 2015 CF was 64.02%;
+					if GEN_TECH(j)=4 then 0.00064*(1/(1-PARASITIC_LOAD(j))) else !derated factor for diesel/oil etc. is 0.8461 but 2015 CF was 0.00064
+					if GEN_TECH(j)=5 then 0.79*(1/(1-PARASITIC_LOAD(j)))*1.02692021 else !derated factor for Nuclear is 0.8231; !0.8339 is 2015 UR;
+					if GEN_TECH(j)=6 then 0.9663*(1/(1-PARASITIC_LOAD(j))) else !derated factor for Pump Storage or Storage in general
+					if GEN_TECH(j)=9 then 0.9*(1/(1-PARASITIC_LOAD(j))) else !derated factor for CHP
+					
+					1
+					
+					endif
+					endif
+					endif
+					endif
+					endif;
+				}
+			}
+		}
+		DeclarationSection COSTS {
+			Parameter CARBON_PRICE {
+				Definition: {
+					!22  		! 2015 carbon price	
+					(18+4)* 1.80	! 2025 MODELLING YEAR: FES 2021 five year forecast
+				}
+			}
+			Parameter VOLL_R_UP {
+				Definition: {
+					!max((t,hr),UK_EXT_Price_H(t,hr))
+					!167.91 ! max price in 2015
+					!35!calibrated value
+					75
+					!17000000
+				}
+			}
+			Parameter VOLL_R_DOWN {
+				Definition: {
+					25 !calibrated value
+				}
+			}
+			Parameter VOLL_SYSDEMAND {
+				Definition: 17000;
+			}
+			Parameter COST_RES_CURTAILMENT {
+				Definition: {
+					47.22 !cost of ROC in 2025 assuming 3.6% RPI and £47.22 ROC price in 2018/19 see https://www.ofgem.gov.uk/publications-and-updates/renewables-obligation-ro-buy-out-price-and-mutualisation-ceilings-2018-19-ro-year
+				}
+			}
+			Parameter SHUTCOST {
+				IndexDomain: (j)|GEN_TYPE(j)=1;
+				Definition: 1000;
+			}
+			Parameter STARTCOST {
+				IndexDomain: (j)|GEN_TYPE(j)=1;
+			}
+			Parameter VARCOST {
+				IndexDomain: (j);
+			}
+			Parameter FIXEDCOST {
+				IndexDomain: (j);
+			}
+			Parameter TRANSCOST {
+				IndexDomain: (j);
+			}
+			Parameter FUELCOST {
+				IndexDomain: (j,t);
+			}
+			Parameter SPIN_UP_AVAIL_PRICE {
+				Definition: 7.66;
+				Comment: "engie said STOR could earn up to £20,000/MW/year. http://www.engie.co.uk/wp-content/uploads/2016/11/stor-web-updated-11oct-final.pdf";
+			}
+			Parameter GASPRICE_H {
+				IndexDomain: (t,hr);
+			}
+			Parameter COALPRICE_H {
+				IndexDomain: (t,hr);
+			}
+			Parameter OILPRICE_H {
+				IndexDomain: (t,hr);
+			}
+		}
+		DeclarationSection UNIT_COMMITMENT_PARAMETERS {
+			Parameter MIN_UPTIME {
+				IndexDomain: j | GEN_TYPE(j) = 1;
+			}
+			Parameter MIN_DOWNTIME {
+				IndexDomain: j | GEN_TYPE(j) = 1;
+			}
+			Parameter L {
+				IndexDomain: (j);
+				Range: nonnegative;
+				Definition: Min( card(t), max(0, ((MIN_DOWNTIME(j) - DOWNTIME_PRIOR(j)) * (1 - U_INIT(j)))));
+			}
+			Parameter G {
+				IndexDomain: (j) | GEN_TYPE(j) = 1;
+				Range: nonnegative;
+				Definition: min(card(t), max(0, ((MIN_UPTIME(j) - UPTIME_PRIOR(j)) * (U_INIT(j)))));
+			}
+		}
+		DeclarationSection INTERCONN_PARAMETERS {
+			Parameter SEM_EXT_PRICE_H {
+				IndexDomain: (t,hr);
+			}
+			Parameter NL_EXT_PRICE_H {
+				IndexDomain: (t,hr);
+			}
+			Parameter FR_EXT_PRICE_H {
+				IndexDomain: (t,hr);
+			}
+			Parameter NO_EXT_Price_H {
+				IndexDomain: (t,hr);
+			}
+			Parameter BE_EXT_Price_H {
+				IndexDomain: (t,hr);
+			}
+			Parameter UK_EXT_Price_H {
+				IndexDomain: (t,hr);
+			}
+			Parameter INTERCONNECTOR_PRICES {
+				IndexDomain: (j,t)| GEN_TYPE(j) = 3;
+			}
+			Parameter INTERCONNECTOR_PRICES_H {
+				IndexDomain: (j,t,hr)| GEN_TYPE(j) = 3;
+			}
+			Parameter INTERCONN_IMP_CF {
+				IndexDomain: j| GEN_TYPE(j) = 3;
+				Definition: {
+					if j="7_Interconnector_Exist_IFA" then 1978/2000 else
+					if j="7_Interconnector_Exist_Britned" then 1 else
+					if j="2_Interconnector_Exist_Moyle" then 201/500 else
+					if j="4_Interconnector_Exist_East-West_(Wales-Ireland)" then 289.15/500 else !289.15 is average of the highest 50 hours of actual imports from EWIC
+					1
+					endif
+					endif
+					endif
+					endif;
+				}
+			}
+			Parameter INTERCONN_EXP_CF {
+				IndexDomain: j| GEN_TYPE(j) = 3;
+				Definition: {
+					if j="7_Interconnector_Exist_IFA" then 1709/2000 else
+					if j="7_Interconnector_Exist_Britned" then 731/1000 else
+					if j="2_Interconnector_Exist_Moyle" then 251/500 else
+					if j="4_Interconnector_Exist_East-West_(Wales-Ireland)" then 500/500 else
+					1
+					endif
+					endif
+					endif
+					endif;
+				}
+			}
+			Parameter INTERCONN_RAMPING_LIMITS {
+				IndexDomain: j| GEN_TYPE(j) = 3;
+				Definition: {
+					if j="2_Interconnector_Exist_Moyle" then 274 else
+					if j="4_Interconnector_Exist_East-West_(Wales-Ireland)" then 300 else
+					CAPACITY(j)
+					endif
+					endif
+				}
+			}
+		}
+		DeclarationSection STORAGE_PARAMETERS {
+			Parameter CHARGE_EFFICIENCY {
+				IndexDomain: j| GEN_TYPE(j) = 2;
+			}
+			Parameter MAX_OUTPUT_HOURS {
+				IndexDomain: j | GEN_TYPE(j) = 2;
+			}
+			Parameter MIN_OUTPUT_HOURS {
+				IndexDomain: j | GEN_TYPE(j)=2;
+			}
+			Parameter STORAGE_CAPACITY {
+				IndexDomain: j | GEN_TYPE(j)=2;
+				Definition: CAPACITY(j);
+			}
+			Parameter INITIAL_STORAGE_STOCK {
+				IndexDomain: j| GEN_TYPE(j)=2;
+				Definition: STORAGE_CAPACITY(j) * (MAX_OUTPUT_HOURS(j)-MIN_OUTPUT_HOURS(j));
+			}
+		}
+		DeclarationSection SCENARIO_PARAMETERS {
+			Parameter DEMAND_SCL_FACTOR {
+				Definition: {
+					!1 for 2015 use 1
+					
+					301/335 !for 2025 (based on FES 2021 Five year forecast)
+				}
+			}
+			Parameter HYDRO_SCL_FACTOR {
+				Definition: {
+					!1! BASELINE
+					1+0.23 !for 2025
+				}
+			}
+			Parameter NUCLEAR_SCL_FACTOR {
+				Definition: {
+					!1! BASELINE
+					1-0.4 !for 2025
+				}
+			}
+			Parameter EXT_PRC_SCL_FACTOR {
+				Definition: {
+					!1! BASELINE
+					1.166551611 ! base on assumption of gas and carbon price in 2025 relative to 2015 and CCGT efficiency and fuel emissions factor
+				}
+			}
+			Parameter GAS_SCL_FACTOR {
+				Definition: {
+					! 1 !2015 baseline
+					 0.99 !2025 FES vs 2015
+				}
+			}
+			Parameter COAL_SCL_FACTOR {
+				Definition: {
+					!1.0275 baseline calibrated
+					 1.0275*1.14 !calibrated factor times uplift for 2025
+				}
+			}
+			Parameter OIL_SCL_FACTOR {
+				Definition: {
+					!1 !baseline
+					1-0.38 !2025 scaling factor
+				}
+			}
+			Parameter BIOMASS_SCL_FACTOR {
+				Definition: {
+					!1 !baseline
+					1.76 !2025 scaling factor
+				}
+			}
+			Parameter CHP_SCL_FACTOR {
+				Definition: {
+					!1 !baseline
+					1-0.33 !2025 scaling factor
+				}
+			}
+			Parameter OTHER_RES_SCL_FACTOR {
+				Definition: {
+					!1 !baseline
+					1+0.44 !2025 scaling factor
+				}
+			}
+			Parameter SupplyCurveUplift {
+				Definition: 1;
+			}
+			Parameter WIND_FACTOR_Z {
+				IndexDomain: z;
+				Definition: {
+					!1.5! BASELINE
+					!3.62 !2025 mix of offshore and onshore wind
+					!3.99 !2025 mix +10% of offshore and onshore wind
+					!4.53 !2025 mix +25% of offshore and onshore wind
+					!5.44 !2025 mix +50% of offshore and onshore wind
+				}
+			}
+			Parameter SOLAR_FACTOR_Z {
+				IndexDomain: z;
+				Definition: {
+					!1.5! BASELINE
+					!2.09 !2025 mix of solar
+					!2.30 !2025 mix +10% VRE of solar
+					!2.62 !2025 mix +25% VRE of solar
+					!3.14 !2025 mix +50% VRE of solar
+				}
+			}
+			Parameter WIND_SCL_FACTOR;
+			Parameter SOLAR_SCL_FACTOR;
+		}
+	}
+	Section FORMULATION_MIP {
+		DeclarationSection DECISION_VARIABLES {
+			Variable power {
+				IndexDomain: (j,t)| GEN_TYPE(j)=1 and CAPACITY(j)>0 AND EXOG_PLANTS(j)=0;
+				Range: [0, CAPACITY(j)];
+				Comment: "power";
+			}
+			Variable spin_up {
+				IndexDomain: (j,t)| GEN_TYPE(j)=1 and CAPACITY(j)>0 AND EXOG_PLANTS(j)=0;
+				Range: [0, CAPACITY(j)];
+				Comment: "ramp up: spinning reserve";
+			}
+			Variable spin_down {
+				IndexDomain: (j,t)| GEN_TYPE(j)=1 and CAPACITY(j)>0 AND EXOG_PLANTS(j)=0;
+				Range: [0, CAPACITY(j)];
+				Comment: "ramp down: spinning reserve";
+			}
+			Variable nonsync_spin_up {
+				IndexDomain: (j,t)| CAPACITY(j)>0 AND EXOG_PLANTS(j)=0 AND GEN_TECH(j)=2;
+				Range: [0, CAPACITY(j)];
+				Comment: "ramp up: NON-spinning reserve";
+			}
+			Variable spin_up_stor {
+				IndexDomain: (j,t)| GEN_TYPE(j)=2 and CAPACITY(j)>0 AND EXOG_PLANTS(j)=0;
+				Range: [0, CAPACITY(j)];
+				Comment: "ramp up: spinning reserve";
+			}
+			Variable spin_down_stor {
+				IndexDomain: (j,t)| GEN_TYPE(j)=2 and CAPACITY(j)>0 AND EXOG_PLANTS(j)=0;
+				Range: [0, CAPACITY(j)];
+				Comment: "ramp up: spinning reserve";
+			}
+			Variable u {
+				IndexDomain: (j,t)| GEN_TYPE(j)=1 and CAPACITY(j)>0 AND EXOG_PLANTS(j)=0;
+				Range: binary;
+				Property: ReducedCost, ValueRange, CoefficientRange, Basic;
+				Comment: "commitment variable";
+			}
+			Variable v {
+				IndexDomain: (j,t)| GEN_TYPE(j)=1 and CAPACITY(j)>0 AND EXOG_PLANTS(j)=0;
+				Range: binary;
+				Property: ReducedCost, ValueRange, CoefficientRange, Basic;
+				Comment: "start up binary variable";
+			}
+			Variable w {
+				IndexDomain: (j,t)| GEN_TYPE(j)=1 and CAPACITY(j)>0 AND EXOG_PLANTS(j)=0;
+				Range: binary;
+				Property: ReducedCost, ValueRange, CoefficientRange, Basic;
+				Comment: "shut down binary variable";
+			}
+			Variable x {
+				IndexDomain: (j,t)| GEN_TYPE(j) = 3;
+				Range: free;
+				Comment: {
+					"positive - import
+					negative - export"
+				}
+			}
+			Variable discharge {
+				IndexDomain: (j,t)| GEN_TYPE(j)=2;
+				Range: [0, STORAGE_CAPACITY(j)];
+			}
+			Variable charge {
+				IndexDomain: (j,t)| GEN_TYPE(j)=2;
+				Range: [0, STORAGE_CAPACITY(j)];
+			}
+		}
+		DeclarationSection AUX_VARIABLES {
+			Variable stor_level {
+				IndexDomain: (j,t)| GEN_TYPE(j)=2;
+				Range: nonnegative;
+				Definition: STORAGE_LEVEL_INIT(j)$(ord(t)=1)+stor_level(j,t-1)$(ord(t)>1)+[charge(j,t)*CHARGE_EFFICIENCY(j)-discharge(j,t)];
+			}
+			Variable ls_D {
+				IndexDomain: (t);
+				Range: nonnegative;
+				Property: ReducedCost, ValueRange, CoefficientRange, Basic;
+			}
+			Variable s_RUp {
+				IndexDomain: (t);
+				Range: [0, OPERATING_RESERVE_UP(t)];
+			}
+			Variable s_RDown {
+				IndexDomain: (t);
+				Range: [0, OPERATING_RESERVE_DOWN(t)];
+			}
+			Variable curtailment {
+				IndexDomain: (t);
+				Range: nonnegative;
+			}
+		}
+		DeclarationSection SYSTEM_CONTRAINTS {
+			Constraint DEMAND_BALANCE {
+				IndexDomain: (t);
+				Property: ShadowPrice;
+				Definition: {
+					sum(j | GEN_TYPE(j) = 1, [power(j,t)*(1-PARASITIC_LOAD(j))]*(1-TRANSM_LOSSES))
+					
+					+ sum(j | GEN_TYPE(j) = 2, discharge(j,t)*(1-TRANSM_LOSSES))
+					
+					+ sum(j | GEN_TYPE(j) = 3, x(j,t))
+					
+					=
+					
+					[RD(t)-ls_D(t)+curtailment(t)]
+					
+					+ sum(j | GEN_TYPE(j) = 2, charge(j,t))
+				}
+			}
+			Constraint RESERVE_UP {
+				IndexDomain: (t);
+				Property: ShadowPrice;
+				Definition: {
+					sum(j|GEN_TYPE(j) = 1, spin_up(j,t))
+					
+					+sum(j|GEN_TYPE(j) = 1, nonsync_spin_up(j,t))
+					
+					+sum(j, spin_up_stor(j,t))
+					
+					>=OPERATING_RESERVE_UP(t)-s_RUp(t)
+				}
+			}
+			Constraint RESERVE_DOWN {
+				IndexDomain: (t);
+				Property: ShadowPrice;
+				Definition: {
+					sum(j|GEN_TYPE(j)=1,spin_down(j,t))
+					
+					
+					
+					>=OPERATING_RESERVE_DOWN(t)-s_RDown(t)
+				}
+			}
+			Constraint RES_CURTAILMENT {
+				IndexDomain: (t);
+				Property: ShadowPrice;
+				Definition: curtailment(t)<=[WIND_TS(t)+WIND_EMB(t)]*WIND_SCL_FACTOR;
+			}
+		}
+		DeclarationSection THERMAL_GENERATION_CONTRAINTS {
+			Constraint POWER_RAMPUP_RATE_1 {
+				IndexDomain: (j,t) | GEN_TYPE(j)=1 and CAPACITY(j)>0 and ord(t)=1 AND EXOG_PLANTS(j)=0;
+				Property: ShadowPrice;
+				Definition: [power(j,t)+spin_up(j,t)]-P_INIT(j)<= STARTUP_RAMP(j)*(2-u(j,t)-U_INIT(j)) + MAX_RAMPUP(j)*(1+U_INIT(j)-u(j,t));
+			}
+			Constraint POWER_RAMPUP_RATE_2 {
+				IndexDomain: (j,t) | GEN_TYPE(j) = 1 and CAPACITY(j)>0 and ord(t)>1 and ord(t)<=card(t) AND EXOG_PLANTS(j)=0;
+				Property: ShadowPrice;
+				Definition: [power(j,t)+spin_up(j,t)]-power(j,t-1) <= STARTUP_RAMP(j)*(2-u(j,t)-u(j,t-1)) + MAX_RAMPUP(j)*(1+u(j,t-1)-u(j,t));
+				Comment: "This equation limits the power output to the";
+			}
+			Constraint POWER_RAMPDOWN_RATE_1 {
+				IndexDomain: (j,t) | GEN_TYPE(j) = 1 and CAPACITY(j)>0 and ord(t)=1 AND EXOG_PLANTS(j)=0;
+				Property: ShadowPrice;
+				Definition: P_INIT(j)-power(j,t)+ spin_down(j,t) <= SHUTDOWN_RAMP(j)*(2-u(j,t)-U_INIT(j))+MAX_RAMPDOWN(j)*(1-U_INIT(j)+u(j,t));
+			}
+			Constraint POWER_RAMPDOWN_RATE_2 {
+				IndexDomain: (j,t) | GEN_TYPE(j) = 1 and CAPACITY(j)>0 and ord(t)>1 and ord(t)<=card(t) AND EXOG_PLANTS(j)=0;
+				Property: ShadowPrice;
+				Definition: power(j,t-1) - power(j,t) + spin_down(j,t) <= SHUTDOWN_RAMP(j)*(2-u(j,t)-u(j,t-1))+MAX_RAMPDOWN(j)*(1-u(j,t-1)+u(j,t));
+				Comment: {
+					"This limits the delta across the two hours for power output
+					
+					Thesis equation reference - 5.26"
+				}
+			}
+			Constraint POWER_OUTPUT_RANGE_LOWER {
+				IndexDomain: (j,t) | GEN_TYPE(j) = 1 and CAPACITY(j)>0 AND EXOG_PLANTS(j)=0;
+				Property: ShadowPrice;
+				Definition: power(j,t) >= u(j,t) * MIN_POWER_OUT(j) + spin_down(j,t);
+			}
+			Constraint POWER_OUTPUT_RANGE_UPPER {
+				IndexDomain: (j,t) | GEN_TYPE(j) = 1 and CAPACITY(j)>0 AND EXOG_PLANTS(j)=0;
+				Property: ShadowPrice;
+				Definition: [power(j,t)+spin_up(j,t)] <= u(j,t) * MAX_POWER_OUT(j);
+				Comment: {
+					"This is the maximum threshold power output
+					
+					Thesis equation reference - 5.22"
+				}
+			}
+			Constraint NON_SPINNING_UP_UB {
+				IndexDomain: (j,t) | CAPACITY(j)>0 AND EXOG_PLANTS(j)=0 AND GEN_TECH(j)=2;
+				Property: ShadowPrice;
+				Definition: nonsync_spin_up(j,t) <= [1-u(j,t)]*MAX_POWER_OUT(j);
+			}
+		}
+		DeclarationSection UNIT_COMMITMENT_CONTRAINTS {
+			Constraint LOGICAL_STARTUP_SHUTDOWN_1 {
+				IndexDomain: (j,t)| GEN_TYPE(j)=1 and CAPACITY(j)>0 and ord(t)=1 AND EXOG_PLANTS(j)=0;
+				Definition: u(j,t)-U_INIT(j)=v(j,t)-w(j,t);
+			}
+			Constraint LOGICAL_STARTUP_SHUTDOWN_2 {
+				IndexDomain: (j,t)| GEN_TYPE(j)=1 and CAPACITY(j)>0 and ord(t)>1 AND EXOG_PLANTS(j)=0;
+				Definition: u(j,t)-u(j,t-1)=v(j,t)-w(j,t);
+			}
+			Constraint MINIMUM_UP_TIME_1 {
+				IndexDomain: (j,t)| GEN_TYPE(j)=1 and CAPACITY(j)>0 and ord(t)>=1 and ord(t) <=G(j) and G(j)<>0 AND EXOG_PLANTS(j)=0;
+				Property: ShadowPrice;
+				Definition: {
+					!sum(tt|tt>=StartOfHorizon_EPT(t) and tt<=StartOfHorizon_EPT(t)+G(j)-1, 1-v(j,tt)) = 0
+					
+					sum(tt$(ord(tt) <= G(j)),1-u(j,t))=0! formulation from DISPA-SET model gives same as above
+				}
+				Comment: "| gen_type(j)=1 and 1 <= ord(t) and ord(t) <= g(j)";
+			}
+			Constraint MINIMUM_UP_TIME_2 {
+				IndexDomain: (j,t) | GEN_TYPE(j)=1 and CAPACITY(j)>0 and ord(t)>=(1+G(j)) and ord(t)<=(card(t)-MIN_UPTIME(j)+1) AND EXOG_PLANTS(j)=0;
+				Text: "Minimum Up time constraint - second period";
+				Property: ShadowPrice;
+				Definition: {
+					!if g(j) > 0 then
+					!	sum(tt | tt >= t and tt <= t + min_uptime(j) - 1, v(j,tt)) >= (min_uptime(j) * (v(j,t) - v(j,t-1)))
+					!else
+					!	sum(tt | tt >= t and tt <= t + min_uptime(j) - 1, v(j,tt)) >= (min_uptime(j) * (v(j,t) - prior_status_up(j)))
+					!endif;
+					
+					sum(tt$((ord(tt)>=ord(t)) and (ord(tt) <= (ord(t)+MIN_UPTIME(j)-1))),u(j,tt))>=
+					
+					MIN_UPTIME(j)*(u(j,t)-U_INIT(j)$(ord(t) = 1)-u(j,t-1)$(ord(t) > 1))
+				}
+				Comment: {
+					"This sets the minimum up time for the plants - note that it should be a rolling window - such that it is looking ahead and ensuring that if the v value
+					has changed from 0 to 1 in the past hour, that the next sum hours over tt are greater than the minimum up time value
+					
+					Thesis equation reference - 5.31
+					
+					| gen_type(j)=1 and g(j) + 1 <= ord(t) and ord(t) <= card(t) - min_uptime(j) + 1"
+				}
+			}
+			Constraint MINIMUM_UP_TIME_3 {
+				IndexDomain: (j,t) | GEN_TYPE(j)=1 and CAPACITY(j)>0 and ord(t)>=(card(t)-MIN_UPTIME(j)+2) and ord(t)<=card(t) AND EXOG_PLANTS(j)=0;
+				Property: ShadowPrice;
+				Definition: {
+					!sum(tt | tt >= t, v(j,tt)) - (v(j,t) - v(j,t-1)) >= 0
+					! Note that the loop over the reference hours needs to be considered - needs to be added to the above set
+					
+					sum(tt$((ord(t) <= ord(tt)) and (ord(tt) <= card(t))),u(j,tt)-(u(j,t)-U_INIT(j)$(ord(t) = 1)-u(j,t-1)$(ord(t) > 1)))>=0
+				}
+				Comment: {
+					"This is the minimum up time for the final hours - basically it is saying that if it switches on some time in the last few hours (within the proximity)
+					of the final run hours, that the sum of the hours is greater than zero
+					| gen_type(j)=1 and card(t) - min_uptime(j) + 2 <= ord(t) and ord(t) <= card(t)
+					Thesis equation reference - 5.32"
+				}
+			}
+			Constraint MINIMUM_DOWN_TIME_1 {
+				IndexDomain: (j,t) | GEN_TYPE(j) = 1 and CAPACITY(j)>0 and ord(t)>=1 and ord(t)<=L(j) and L(j)<>0 AND EXOG_PLANTS(j)=0;
+				Property: ShadowPrice;
+				Definition: {
+					!sum(tt | tt >= t and tt<=t+l(j)-1, v(j,tt)) = 0
+					
+					sum(tt$(ord(tt) <= L(j)),u(j,t)) = 0
+				}
+				Comment: {
+					"As for the minimum up time - however, this time referencing l(j) instead of g(j)
+					 | gen_type(j) = 1 and 1 <= ord(t) <= l(j) and l(j)<>0
+					Thesis equation reference - 5.33"
+				}
+			}
+			Constraint MINIMUM_DOWN_TIME_2 {
+				IndexDomain: (j,t) | GEN_TYPE(j)=1 and CAPACITY(j)>0 and ord(t)>=(L(j)+1) and ord(t)<=(card(t)-MIN_DOWNTIME(j)+1) AND EXOG_PLANTS(j)=0;
+				Property: ShadowPrice;
+				Definition: {
+					!if l(j) > 0 then
+					!	sum(tt | t <= tt and tt <= t + min_downtime(j) - 1, 1 - v(j,tt)) >= (min_downtime(j) * (v(j,t-1) - v(j,t)))
+					!else 
+					!	sum(tt | t <= tt and tt <= t + min_downtime(j) - 1, 1 - v(j,tt)) >= (min_downtime(j) * (prior_status_up(j) - v(j,t)))
+					!endif;
+					
+					sum(tt$((ord(tt)>=ord(t)) and (ord(tt) <= (ord(t)+MIN_DOWNTIME(j)-1))),1-u(j,tt))
+					
+					>=
+					
+					MIN_DOWNTIME(j)*(U_INIT(j)$(ord(t)=1)+u(j,t-1)$(ord(t)>1)-u(j,t))
+				}
+				Comment: {
+					"Thesis equation reference - 5.35
+					
+					| gen_type(j) = 1 and l(j) + 1 <= ord(t) and ord(t) <= card(t) - min_downtime(j) + 1"
+				}
+			}
+			Constraint MINIMUM_DOWN_TIME_3 {
+				IndexDomain: (j,t) | GEN_TYPE(j) = 1 and CAPACITY(j)>0 and ord(t)>=(card(t)-MIN_DOWNTIME(j)+2)and ord(t)<=card(t) AND EXOG_PLANTS(j)=0;
+				Property: ShadowPrice;
+				Definition: {
+					!sum(tt | tt >= t, 1 - v(j,tt)) - (v(j,t-1) - v(j,t)) >= 0
+					
+					sum(tt$((ord(tt)>=ord(t)) and (ord(tt) <=card(t))),1-u(j,tt)-(U_INIT(j)$(ord(t)=1)+u(j,t-1)$(ord(t)>1)-u(j,t)))
+					>=
+					0
+				}
+				Comment: {
+					"Thesis equation reference - 5.36
+					| gen_type(j) = 1 and card(t) - min_uptime(j) + 2  <= ord(t) and ord(t) <= card(t)"
+				}
+			}
+		}
+		DeclarationSection ENERGY_STORAGE_CONTRAINTS {
+			Constraint STORAGE_MAXCHARGE {
+				IndexDomain: (j,t)| GEN_TYPE(j) = 2;
+				Property: ShadowPrice;
+				Definition: charge(j,t) <= STORAGE_CAPACITY(j);
+				Comment: {
+					"Charge rate should be less than storage capacity
+					
+					Thesis equation reference - 5.37"
+				}
+			}
+			Constraint STORAGE_MAXDISCHARGE {
+				IndexDomain: (j,t)| GEN_TYPE(j) = 2;
+				Property: ShadowPrice;
+				Definition: discharge(j,t)<= STORAGE_CAPACITY(j);
+				Comment: "discharge(j,t)+spin_up_stor(j,t) <= STORAGE_CAPACITY(j)";
+			}
+			Constraint STORAGE_MAXENERGY {
+				IndexDomain: (j,t) | GEN_TYPE(j) = 2;
+				Property: ShadowPrice;
+				Definition: stor_level(j,t) <= STORAGE_CAPACITY(j)*(MAX_OUTPUT_HOURS(j)-MIN_OUTPUT_HOURS(j));
+			}
+			Constraint STORAGE_SPINUP {
+				IndexDomain: (j,t)| GEN_TYPE(j) = 2;
+				Property: ShadowPrice;
+				Definition: spin_up_stor(j,t) <= STORAGE_CAPACITY(j);
+				Comment: {
+					"Charge rate should be less than storage capacity
+					
+					Thesis equation reference - 5.37"
+				}
+			}
+		}
+		DeclarationSection EXTERNAL_INTERCONN_CONSTRAINTS {
+			Constraint UPPER_BOUND_INTERCONN_IMPORT {
+				IndexDomain: (j,t)| GEN_TYPE(j) = 3;
+				Property: ShadowPrice;
+				Definition: x(j,t)<=INTERCONN_IMP_CF(j)*CAPACITY(j);
+			}
+			Constraint UPPER_BOUND_INTERCONN_EXPORT {
+				IndexDomain: (j,t)| GEN_TYPE(j) = 3;
+				Property: ShadowPrice;
+				Definition: x(j,t)>=-1*INTERCONN_EXP_CF(j)*CAPACITY(j);
+			}
+			Constraint INTERCONN_IMPORT_RAMPING {
+				IndexDomain: (j,t)| GEN_TYPE(j) = 3 and INTERCONN_RAMPING_LIMITS(j)<>CAPACITY(j);
+				Property: ShadowPrice;
+				Definition: x(j,t)-x(j,t-1)$(ord(t)>1)-X_INIT(j)$(ord(t)=1)<=INTERCONN_RAMPING_LIMITS(j);
+			}
+			Constraint INTERCONN_EXPORT_RAMPING {
+				IndexDomain: (j,t)| GEN_TYPE(j) = 3 and INTERCONN_RAMPING_LIMITS(j)<>CAPACITY(j);
+				Property: ShadowPrice;
+				Definition: x(j,t-1)$(ord(t)>1)+X_INIT(j)$(ord(t)=1)-x(j,t)<=INTERCONN_RAMPING_LIMITS(j);
+			}
+		}
+		DeclarationSection MATH_PROGRAM_MIP {
+			Set GB_MIP_CONSTRAINTS {
+				SubsetOf: AllConstraints;
+			}
+			Set GB_MIP_VARIABLES {
+				SubsetOf: AllVariables;
+			}
+			Variable OBJECTIVE_FUNCTION {
+				Range: free;
+				Definition: {
+					sum(t,
+					
+					sum(j|GEN_TYPE(j)=1, power(j,t)*[([FUELCOST(j,t)*HEATRATE(j)+VARCOST(j)+CARBON_INTENSITY(j)*CARBON_PRICE])]) !avergae heat rate
+					
+					+ sum(j|GEN_TYPE(j)=1, [v(j,t)*STARTCOST(j)+w(j,t)*SHUTCOST(j)]) !cycling cost
+					
+					+ sum(j, (nonsync_spin_up(j,t)+spin_up(j,t)+spin_up_stor(j,t))*SPIN_UP_AVAIL_PRICE) ! cost of reserve
+					
+					+ sum(j|GEN_TYPE(j)=2, VARCOST(j)*discharge(j,t)) ! var cost only applies to discharging
+					
+					+ sum(j|GEN_TYPE(j)=3, x(j,t)*INTERCONNECTOR_PRICES(j,t)) !cost of interconnection import/export
+					
+					+ VOLL_R_UP*s_RUp(t) !VoLL for reserve up
+					
+					+ VOLL_R_DOWN*s_RDown(t)!VoLL for reserve down
+					
+					+ VOLL_SYSDEMAND*ls_D(t)!VoLL for system demand
+					
+					+ COST_RES_CURTAILMENT*curtailment(t) !curtailment cost
+					
+					)
+				}
+			}
+			MathematicalProgram GB_MIP {
+				Objective: OBJECTIVE_FUNCTION;
+				Direction: minimize;
+				Constraints: GB_MIP_CONSTRAINTS;
+				Variables: GB_MIP_VARIABLES;
+				Type: Automatic;
+			}
+		}
+	}
+	Section FORMULATION_LP {
+		DeclarationSection THERMAL_GENERATION_CONTRAINTS_LP {
+			Constraint CON_POWER_RAMPUP_1_LP {
+				IndexDomain: (j,t) | GEN_TYPE(j)=1 and CAPACITY(j)>0 and ord(t)=1 AND EXOG_PLANTS(j)=0;
+				Property: ShadowPrice;
+				Definition: [power(j,t)+spin_up(j,t)]-P_INIT(j)<= STARTUP_RAMP(j);
+			}
+			Constraint CON_POWER_RAMPUP_2_LP {
+				IndexDomain: (j,t) | GEN_TYPE(j) = 1 and CAPACITY(j)>0 and ord(t)>1 and ord(t)<=card(t) AND EXOG_PLANTS(j)=0;
+				Property: ShadowPrice;
+				Definition: [power(j,t)+spin_up(j,t)]-power(j,t-1) <= MAX_RAMPUP(j);
+			}
+			Constraint CON_POWER_RAMPDOWN_1_LP {
+				IndexDomain: (j,t) | GEN_TYPE(j) = 1 and CAPACITY(j)>0 and ord(t)=1 AND EXOG_PLANTS(j)=0;
+				Property: ShadowPrice;
+				Definition: P_INIT(j)-power(j,t)+ spin_down(j,t) <= SHUTDOWN_RAMP(j);
+			}
+			Constraint CON_POWER_RAMPDOWN_2_LP {
+				IndexDomain: (j,t) | GEN_TYPE(j) = 1 and CAPACITY(j)>0 and ord(t)>1 and ord(t)<=card(t) AND EXOG_PLANTS(j)=0;
+				Property: ShadowPrice;
+				Definition: power(j,t-1) - power(j,t) + spin_down(j,t) <= MAX_RAMPDOWN(j);
+				Comment: {
+					"This limits the delta across the two hours for power output
+					
+					Thesis equation reference - 5.26"
+				}
+			}
+			Constraint CON_POWER_RANGE_LOWER_LP {
+				IndexDomain: (j,t) | GEN_TYPE(j) = 1 and CAPACITY(j)>0 AND EXOG_PLANTS(j)=0;
+				Property: ShadowPrice;
+				Definition: power(j,t) >=spin_down(j,t);
+			}
+			Constraint CON_POWER_RANGE_UPPER_LP {
+				IndexDomain: (j,t) | GEN_TYPE(j) = 1 and CAPACITY(j)>0 AND EXOG_PLANTS(j)=0;
+				Property: ShadowPrice;
+				Definition: [power(j,t)+spin_up(j,t)] <= MAX_POWER_OUT(j);
+				Comment: {
+					"This is the maximum threshold power output
+					
+					Thesis equation reference - 5.22"
+				}
+			}
+		}
+		DeclarationSection MATH_PROGRAM_LP {
+			Set GB_LP_CONSTRAINTS {
+				SubsetOf: AllConstraints;
+			}
+			Set GB_LP_VARIABLES {
+				SubsetOf: AllVariables;
+			}
+			Variable LP_OBJECTIVE_FUNCTION {
+				Range: free;
+				Definition: {
+					sum(t,
+					
+					sum(j|GEN_TYPE(j)=1, power(j,t)*[([FUELCOST(j,t)*HEATRATE(j)+VARCOST(j)+CARBON_INTENSITY(j)*CARBON_PRICE])]) !avergae heat rate
+					
+					+ sum(j, (nonsync_spin_up(j,t)+spin_up(j,t)+spin_up_stor(j,t))*SPIN_UP_AVAIL_PRICE) ! cost of reserve
+					
+					+ sum(j|GEN_TYPE(j)=2, VARCOST(j)*discharge(j,t)) ! var cost only applies to discharging
+					
+					+ sum(j|GEN_TYPE(j)=3, x(j,t)*INTERCONNECTOR_PRICES(j,t))!cost of interconnection import/export
+					
+					+ VOLL_R_UP*s_RUp(t)!VoLL for reserve up
+					
+					+ VOLL_R_DOWN*s_RDown(t)!VoLL for reserve down
+					
+					+ VOLL_SYSDEMAND*ls_D(t)!VoLL for system demand
+					
+					+ COST_RES_CURTAILMENT*curtailment(t)!curtailment cost
+					
+					)
+				}
+			}
+			MathematicalProgram GB_LP {
+				Objective: LP_OBJECTIVE_FUNCTION;
+				Direction: minimize;
+				Constraints: GB_LP_CONSTRAINTS;
+				Variables: GB_LP_VARIABLES;
+				Type: Automatic;
+			}
+		}
+	}
+	Section MODELLING_PROCEDURES {
+		DeclarationSection ROLLINGHORIZON {
+			Parameter HORIZON_START {
+				Definition: 1;
+			}
+			ElementParameter POSITION_HORIZON_START {
+				Range: Time;
+				Definition: Nth(t,HORIZON_START);
+			}
+			Parameter HORIZON_END {
+				Definition: count(t);
+			}
+			Parameter HORIZON_CUT_OFF_TIME {
+				Definition: {
+					HORIZON_END-GAP_END_HORIZON_CUTOFF
+					!70
+				}
+			}
+			ElementParameter POSITION_CUT_OFF_TIME {
+				Range: Time;
+				Definition: Nth(t,HORIZON_CUT_OFF_TIME);
+			}
+			Parameter GAP_END_HORIZON_CUTOFF {
+				Definition: round(HORIZON_END*0.3,0);
+			}
+			Parameter P_INIT {
+				IndexDomain: j| GEN_TYPE(j)<>2;
+			}
+			Parameter X_INIT {
+				IndexDomain: j| GEN_TYPE(j)=3;
+			}
+			Parameter U_INIT {
+				IndexDomain: j | GEN_TYPE(j)=1;
+			}
+			Parameter P_INIT_ALL {
+				IndexDomain: (j,hr);
+			}
+			Parameter U_INIT_ALL {
+				IndexDomain: (j,hr);
+			}
+			Parameter X_INIT_ALL {
+				IndexDomain: (j,hr)|GEN_TYPE(j)=3;
+			}
+			Parameter UPTIME_PRIOR {
+				IndexDomain: (j)| GEN_TYPE(j) = 1;
+			}
+			Parameter DOWNTIME_PRIOR {
+				IndexDomain: (j)| GEN_TYPE(j) = 1;
+			}
+			Parameter STORAGE_LEVEL_INIT {
+				IndexDomain: j | GEN_TYPE(j)=2;
+			}
+			Parameter NET_CHARGE_1HORIZON_CUTOFF_H {
+				IndexDomain: (j,hr);
+			}
+			Parameter NET_CHARGE_1HORIZON_CUTOFF_PREV {
+				IndexDomain: (j,hr);
+			}
+			Parameter STORAGE_LEVEL_INIT_ALL {
+				IndexDomain: (j,hr);
+			}
+		}
+	}
+	Section SOLVING_THE_MODEL {
+		Procedure SOLVE_THE_UC_MODEL {
+			Body: {
+				empty NET_CHARGE_1HORIZON_CUTOFF_H, STORAGE_LEVEL_INIT,STORAGE_LEVEL_INIT_ALL,NET_CHARGE_1HORIZON_CUTOFF_PREV;
+				empty P_INIT, U_INIT, X_INIT, allvariables, allconstraints, spin_up, spin_down, spin_up_stor,spin_down_stor;
+				
+				for (hr) do
+				
+					!LOAD DATA FROM EACH ROLL
+					GAS_TS(t):=GAS_TS_H(t,hr);
+					COAL_TS(t):=COAL_TS_H(t,hr);
+					OIL_TS(t):=OIL_TS_H(t,hr);
+					WIND_TS(t):=WIND_TS_H(t,hr);
+					WIND_EMB(t):=WIND_EMB_H(t,hr);
+					SOLAR_EMB(t):=SOLAR_EMB_H(t,hr);
+					HYDRO_TS(t):=HYDRO_TS_H(t,hr);
+					INTERCONN_FLOW(t):=INTERCONN_FLOW_H(t,hr);
+					BIOMASS_TS(t):=BIOMASS_TS_H(t,hr);
+					NUCLEAR_TS(t):=NUCLEAR_TS_H(t,hr);
+					PS_CHARGE(t):=PS_CHARGE_H(t,hr);
+					PS_DISCHARGE(t):=PS_DISCHARGE_H(t,hr);
+					ND_FORECAST_ERR(t):=ND_FORECAST_ERR_H(t,hr);
+					WIND_FORECAST_ERR(t):=WIND_FORECAST_ERR_H(t,hr);
+					ND(t):=ND_H(t,hr);
+					RD(t):=RD_H(t,hr);
+				
+				
+				
+				
+					for (j) do
+						if j="7_Interconnector_Exist_IFA" or j="7_Interconnector_New_Eleclink" or
+						j="8_Interconnector_New_IFA2" then INTERCONNECTOR_PRICES(j,t):=FR_EXT_PRICE_H(t,hr)*0.8; else
+						if j="7_Interconnector_Exist_Britned" then INTERCONNECTOR_PRICES(j,t):=NL_EXT_PRICE_H(t,hr)*0.75; else
+						if j="2_Interconnector_Exist_Moyle" or j="4_Interconnector_Exist_East-West_(Wales-Ireland)" then INTERCONNECTOR_PRICES(j,t):=SEM_EXT_PRICE_H(t,hr)*1.09; else
+						if j="7_Interconnector_New_NEMO" then INTERCONNECTOR_PRICES(j,t):=BE_EXT_Price_H(t,hr)*EXT_PRC_SCL_FACTOR; else
+						if j="3_Interconnector_New_NSN" or j="1_Interconnector_New_NorthConnect_KS" then INTERCONNECTOR_PRICES(j,t):=NO_EXT_Price_H(t,hr)*EXT_PRC_SCL_FACTOR; else INTERCONNECTOR_PRICES(j,t):=0;
+						endif; endif; endif; endif; endif;
+				
+						!FUEL COST
+						if GEN_TECH(j)=1 then FUELCOST(j,t):=0; else ! Biomass 28.96
+						if GEN_TECH(j)=2 then FUELCOST(j,t):=15.87; else!GasPrice_H(t,hr)*GAS_SCL_FACTOR; else !Table 321 from BEIS give £15.87/MWh for gas stations in 2015; !CCGT
+						if GEN_TECH(j)=3 then FUELCOST(j,t):=6.57; else !COALPRICE_H(t,hr)*COAL_SCL_FACTOR; Table 321 from BEIS give £6.57/MWh paid by coal stations in 2015;
+						if GEN_TECH(j)=4 then FUELCOST(j,t):=OILPRICE_H(t,hr); else !OILPRICE_H(t,hr)*OIL_SCL_FACTOR; else !Table 321 from BEIS give £27.026/Mwh paid by oil stations; Diesel/GasOil/Peaking Plant 1.86 is to account for 2025 crude oil price
+						if GEN_TECH(j)=5 then FUELCOST(j,t):=5.42; else  !Nuclear £5.42/MWh
+						FUELCOST(j,t):=0; endif;endif;endif;endif;endif;
+				
+				
+					endfor;
+				
+					empty P_INIT, U_INIT;
+				
+					for (j) do
+						if hr="r1" then UPTIME_PRIOR(j):=MIN_UPTIME(j); U_INIT(j):=1; else
+							if sum(tt|tt=POSITION_CUT_OFF_TIME, u(j,tt))=0 then UPTIME_PRIOR(j):=0;
+							else UPTIME_PRIOR(j):=sum(tt|tt>=(POSITION_CUT_OFF_TIME-MIN_UPTIME(j)+1) and tt<=POSITION_CUT_OFF_TIME,u(j,tt)); endif;
+							if sum(tt|tt=POSITION_CUT_OFF_TIME,u(j,tt))=1 then DOWNTIME_PRIOR(j):=0;
+							else DOWNTIME_PRIOR(j):=sum(tt|tt>=(POSITION_CUT_OFF_TIME-MIN_DOWNTIME(j)+1) and tt<=POSITION_CUT_OFF_TIME,1-u(j,tt)); endif;
+						endif;
+							P_INIT(j):=sum(tt$(tt=POSITION_CUT_OFF_TIME), power(j,tt));
+							U_INIT(j):=sum(tt$(tt=POSITION_CUT_OFF_TIME), u(j,tt));
+							X_INIT(j):=sum(tt$(tt=POSITION_CUT_OFF_TIME), x(j,tt));
+				
+							NET_CHARGE_1HORIZON_CUTOFF_PREV(j,hr):=sum(hrr|hrr<=hr,NET_CHARGE_1HORIZON_CUTOFF_H(j,hrr));
+					endfor;
+				
+					!ELECTRICITY STORAGE
+				
+					STORAGE_LEVEL_INIT_ALL(j,hr):=NET_CHARGE_1HORIZON_CUTOFF_PREV(j,hr)+INITIAL_STORAGE_STOCK(j);
+					STORAGE_LEVEL_INIT(j):=STORAGE_LEVEL_INIT_ALL(j,hr);
+				
+					solve GB_MIP;
+				
+					!WRITING RESULTS FROM ALL ROLLING HORIZON RUNS
+					P_ALL(j,t,hr):=power(j,t);
+					SPIN_UP_ALL(j,t,hr):=spin_up(j,t);
+					NON_SPIN_UP_ALL(j,t,hr):=nonsync_spin_up(j,t);
+					SPIN_DOWN_ALL(j,t,hr):=spin_down(j,t);
+					SPIN_UP_STOR_ALL(j,t,hr):=spin_up_stor(j,t);
+					SPIN_DOWN_STOR_ALL(j,t,hr):=spin_down_stor(j,t);
+				
+					U_ALL(j,t,hr):=u(j,t);
+					V_ALL(j,t,hr):=v(j,t);
+					W_ALL(j,t,hr):=w(j,t);
+					X_ALL(j,t,hr):=x(j,t);
+				
+					CHARGE_ALL(j,t,hr):=charge(j,t);
+					DISCHARGE_ALL(j,t,hr):=discharge(j,t);
+					STORAGE_LEVEL_UNITS_ALL(j,t,hr):=stor_level(j,t);
+				
+					NET_CHARGE_1HORIZON_CUTOFF_H(j,hr):=
+							sum(t|t>=POSITION_HORIZON_START and t<=POSITION_CUT_OFF_TIME, CHARGE_EFFICIENCY(j)*[charge(j,t)])-
+							sum(t|t>=POSITION_HORIZON_START and t<=POSITION_CUT_OFF_TIME, [discharge(j,t)]);
+				
+					LS_RESUP_ALL(t,hr):=s_RUp(t);
+					LS_RESDOWN_ALL(t,hr):=s_RDown(t);
+					LS_SYSDEMAND(t,hr):=ls_D(t);
+					CURTAILMENT_ALL(t,hr):=curtailment(t);
+				
+					P_INIT_ALL(j,hr):=P_INIT(j);
+					U_INIT_ALL(j,hr):=U_INIT(j);
+					X_INIT_ALL(j,hr):=X_INIT(j);
+				
+					STORAGE_LEVEL_INIT_ALL(j,hr):=STORAGE_LEVEL_INIT(j);
+				
+					WHOLESALE_PRICE(t,hr):=DEMAND_BALANCE.ShadowPrice(t);
+					SPRICE_RESDOWN(t,hr):=RESERVE_DOWN.ShadowPrice(t);
+					SPRICE_RESUP(t,hr):=RESERVE_UP.ShadowPrice(t);
+					SPRICE_CURTAILMENT(t,hr):=RES_CURTAILMENT.ShadowPrice(t);
+				
+					UPTIME_PRIOR_ALL(j,hr):=UPTIME_PRIOR(j);
+					DOWNTIME_PRIOR_ALL(j,hr):=DOWNTIME_PRIOR(j);
+					INTERCONNECTOR_PRICES_H(j,t,hr):=INTERCONNECTOR_PRICES(j,t);
+				
+					break when hr="r136";
+					if (GB_MIP.ProgramStatus<>'Optimal') then CaseName:=element(RollHorizon,ord(hr)); run SaveCase; endif;
+				endfor;
+			}
+		}
+		Procedure SOLVE_THE_LP_MODEL {
+			Body: {
+				empty NET_CHARGE_1HORIZON_CUTOFF_H, STORAGE_LEVEL_INIT,STORAGE_LEVEL_INIT_ALL,NET_CHARGE_1HORIZON_CUTOFF_PREV;
+				empty P_INIT, U_INIT, X_INIT, allvariables, allconstraints, spin_up, spin_down, spin_up_stor,spin_down_stor;
+				
+				for (hr) do
+				
+					!LOAD DATA FROM EACH ROLL
+					GAS_TS(t):=GAS_TS_H(t,hr);
+					COAL_TS(t):=COAL_TS_H(t,hr);
+					OIL_TS(t):=OIL_TS_H(t,hr);
+					WIND_TS(t):=WIND_TS_H(t,hr);
+					WIND_EMB(t):=WIND_EMB_H(t,hr);
+					SOLAR_EMB(t):=SOLAR_EMB_H(t,hr);
+					HYDRO_TS(t):=HYDRO_TS_H(t,hr);
+					INTERCONN_FLOW(t):=INTERCONN_FLOW_H(t,hr);
+					BIOMASS_TS(t):=BIOMASS_TS_H(t,hr);
+					NUCLEAR_TS(t):=NUCLEAR_TS_H(t,hr);
+					PS_CHARGE(t):=PS_CHARGE_H(t,hr);
+					PS_DISCHARGE(t):=PS_DISCHARGE_H(t,hr);
+					ND_FORECAST_ERR(t):=ND_FORECAST_ERR_H(t,hr);
+					WIND_FORECAST_ERR(t):=WIND_FORECAST_ERR_H(t,hr);
+					ND(t):=ND_H(t,hr);
+					RD(t):=RD_H(t,hr);
+				
+				
+				
+					for (j) do
+						if j="7_Interconnector_Exist_IFA" or j="7_Interconnector_New_Eleclink" or
+						j="8_Interconnector_New_IFA2" then INTERCONNECTOR_PRICES(j,t):=FR_EXT_PRICE_H(t,hr)*0.8; else
+						if j="7_Interconnector_Exist_Britned" then INTERCONNECTOR_PRICES(j,t):=NL_EXT_PRICE_H(t,hr)*0.75; else
+						if j="2_Interconnector_Exist_Moyle" or j="4_Interconnector_Exist_East-West_(Wales-Ireland)" then INTERCONNECTOR_PRICES(j,t):=SEM_EXT_PRICE_H(t,hr)*1.09; else
+						if j="7_Interconnector_New_NEMO" then INTERCONNECTOR_PRICES(j,t):=BE_EXT_Price_H(t,hr)*EXT_PRC_SCL_FACTOR; else
+						if j="3_Interconnector_New_NSN" or j="1_Interconnector_New_NorthConnect_KS" then INTERCONNECTOR_PRICES(j,t):=NO_EXT_Price_H(t,hr)*EXT_PRC_SCL_FACTOR; else INTERCONNECTOR_PRICES(j,t):=0;
+						endif; endif; endif; endif; endif;
+				
+						!FUEL COST
+						if GEN_TECH(j)=1 then FUELCOST(j,t):=0; else ! Biomass 28.96
+						if GEN_TECH(j)=2 then FUELCOST(j,t):=GasPrice_H(t,hr)*GAS_SCL_FACTOR; else!GasPrice_H(t,hr)*GAS_SCL_FACTOR; else !Table 321 from BEIS give £15.87/MWh for gas stations in 2015; !CCGT
+						if GEN_TECH(j)=3 then FUELCOST(j,t):=COALPRICE_H(t,hr)*COAL_SCL_FACTOR; else !Table 321 from BEIS give £6.57/MWh paid by coal stations in 2015;
+						if GEN_TECH(j)=4 then FUELCOST(j,t):=OILPRICE_H(t,hr); else !OILPRICE_H(t,hr)*OIL_SCL_FACTOR; else !Table 321 from BEIS give £27.026/Mwh paid by oil stations; Diesel/GasOil/Peaking Plant 1.86 is to account for 2025 crude oil price
+						if GEN_TECH(j)=5 then FUELCOST(j,t):=5.42; else  !Nuclear £5.42/MWh
+						FUELCOST(j,t):=0; endif;endif;endif;endif;endif;
+				
+				
+					endfor;
+				
+					empty P_INIT, U_INIT;
+				
+					for (j) do
+						if hr="r1" then UPTIME_PRIOR(j):=MIN_UPTIME(j); U_INIT(j):=1; else
+							if sum(tt|tt=POSITION_CUT_OFF_TIME, u(j,tt))=0 then UPTIME_PRIOR(j):=0;
+							else UPTIME_PRIOR(j):=sum(tt|tt>=(POSITION_CUT_OFF_TIME-MIN_UPTIME(j)+1) and tt<=POSITION_CUT_OFF_TIME,u(j,tt)); endif;
+							if sum(tt|tt=POSITION_CUT_OFF_TIME,u(j,tt))=1 then DOWNTIME_PRIOR(j):=0;
+							else DOWNTIME_PRIOR(j):=sum(tt|tt>=(POSITION_CUT_OFF_TIME-MIN_DOWNTIME(j)+1) and tt<=POSITION_CUT_OFF_TIME,1-u(j,tt)); endif;
+						endif;
+							P_INIT(j):=sum(tt$(tt=POSITION_CUT_OFF_TIME), power(j,tt));
+							U_INIT(j):=sum(tt$(tt=POSITION_CUT_OFF_TIME), u(j,tt));
+							X_INIT(j):=sum(tt$(tt=POSITION_CUT_OFF_TIME), x(j,tt));
+				
+							NET_CHARGE_1HORIZON_CUTOFF_PREV(j,hr):=sum(hrr|hrr<=hr,NET_CHARGE_1HORIZON_CUTOFF_H(j,hrr));
+					endfor;
+				
+					!ELECTRICITY STORAGE
+					STORAGE_LEVEL_INIT_ALL(j,hr):=NET_CHARGE_1HORIZON_CUTOFF_PREV(j,hr)+INITIAL_STORAGE_STOCK(j);
+					STORAGE_LEVEL_INIT(j):=STORAGE_LEVEL_INIT_ALL(j,hr);
+				
+					solve GB_LP;
+				
+					!WRITING RESULTS FROM ALL ROLLING HORIZON RUNS
+					P_ALL(j,t,hr):=power(j,t);
+					SPIN_UP_ALL(j,t,hr):=spin_up(j,t);
+					NON_SPIN_UP_ALL(j,t,hr):=nonsync_spin_up(j,t);
+					SPIN_DOWN_ALL(j,t,hr):=spin_down(j,t);
+					SPIN_UP_STOR_ALL(j,t,hr):=spin_up_stor(j,t);
+					SPIN_DOWN_STOR_ALL(j,t,hr):=spin_down_stor(j,t);
+				
+					U_ALL(j,t,hr):=u(j,t);
+					V_ALL(j,t,hr):=v(j,t);
+					W_ALL(j,t,hr):=w(j,t);
+					X_ALL(j,t,hr):=x(j,t);
+				
+					CHARGE_ALL(j,t,hr):=charge(j,t);
+					DISCHARGE_ALL(j,t,hr):=discharge(j,t);
+					STORAGE_LEVEL_UNITS_ALL(j,t,hr):=stor_level(j,t);
+				
+					NET_CHARGE_1HORIZON_CUTOFF_H(j,hr):=
+							sum(t|t>=POSITION_HORIZON_START and t<=POSITION_CUT_OFF_TIME, CHARGE_EFFICIENCY(j)*[charge(j,t)])-
+							sum(t|t>=POSITION_HORIZON_START and t<=POSITION_CUT_OFF_TIME, [discharge(j,t)]);
+				
+					LS_RESUP_ALL(t,hr):=s_RUp(t);
+					LS_RESDOWN_ALL(t,hr):=s_RDown(t);
+					LS_SYSDEMAND(t,hr):=ls_D(t);
+					CURTAILMENT_ALL(t,hr):=curtailment(t);
+				
+					P_INIT_ALL(j,hr):=P_INIT(j);
+					U_INIT_ALL(j,hr):=U_INIT(j);
+					X_INIT_ALL(j,hr):=X_INIT(j);
+				
+					STORAGE_LEVEL_INIT_ALL(j,hr):=STORAGE_LEVEL_INIT(j);
+				
+					WHOLESALE_PRICE(t,hr):=DEMAND_BALANCE.ShadowPrice(t);
+					SPRICE_RESDOWN(t,hr):=RESERVE_DOWN.ShadowPrice(t);
+					SPRICE_RESUP(t,hr):=RESERVE_UP.ShadowPrice(t);
+					SPRICE_CURTAILMENT(t,hr):=RES_CURTAILMENT.ShadowPrice(t);
+				
+					UPTIME_PRIOR_ALL(j,hr):=UPTIME_PRIOR(j);
+					DOWNTIME_PRIOR_ALL(j,hr):=DOWNTIME_PRIOR(j);
+					INTERCONNECTOR_PRICES_H(j,t,hr):=INTERCONNECTOR_PRICES(j,t);
+				
+					break when hr="145";
+					if (GB_LP.ProgramStatus<>'Optimal') then CaseName:=element(RollHorizon,ord(hr)); run SaveCase; endif;
+				endfor;
+			}
+		}
+	}
+	Section DATA_INPUT {
+		DeclarationSection EXCEL_LINK_GENERAL {
+			StringParameter ExcelDataIN_GENERATION_DATA2015 {
+				Definition: "DATA IN/GENERATION INPUT 2015/INPUT_DATA_GENERATION_2015.xlsm";
+			}
+			StringParameter ExcelDataIN_GENERATION_DATA2025 {
+				Definition: "DATA IN/GENERATION INPUT 2025/INPUT_DATA_GENERATION_2025.xlsm";
+			}
+			StringParameter ExcelDataIN_RES_DEMAND {
+				Definition: "DATA IN/RES DATA INPUT/INPUT_DATA_RES.xlsm";
+			}
+			StringParameter ExcelDataIN_OTHER_DATA {
+				Definition: "DATA IN/OTHER DATA INPUT/INPUT_DATA_OTHER.xlsm";
+			}
+			Parameter ExcelStatus;
+			StringParameter ExcelErrorMessage;
+		}
+		Procedure CheckExcelError {
+			Body: {
+				if not ExcelStatus then
+				        if CurrentErrorMessage then
+				                ExcelErrorMessage := FormatString("Function failed with error %s",CurrentErrorMessage);
+				        else
+				                ExcelErrorMessage := FormatString("Function failed without an error message");
+				        endif;
+				
+				        DialogError(ExcelErrorMessage);
+				        empty CurrentErrorMessage;
+					ExcelCloseWorkbook(ExcelDataIN_OTHER_DATA, 0);
+				        halt;
+				endif;
+			}
+		}
+		Procedure IMPORT_GENERATION_DATA {
+			Body: {
+				!SETS
+				ExcelSetActiveSheet(ExcelDataIN_GENERATION_DATA2015, "Sets");
+				ExcelStatus := ExcelRetrieveSet(ExcelDataIN_GENERATION_DATA2015, Generators, "Generators");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_GENERATION_DATA2015, "DATA");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_GENERATION_DATA2015, CAPACITY(j), "CAPACITY", "j");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_GENERATION_DATA2015, "DATA");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_GENERATION_DATA2015, GEN_TYPE(j), "GEN_TYPE", "j");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_GENERATION_DATA2015, "DATA");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_GENERATION_DATA2015, GEN_TECH(j), "GEN_TECH", "j");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_GENERATION_DATA2015, "DATA");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_GENERATION_DATA2015, EXOG_PLANTS(j), "EXOG_PLANTS", "j");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_GENERATION_DATA2015, "DATA");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_GENERATION_DATA2015, THERMAL_EFFICIENCY(j), "THERMAL_EFFICIENCY", "j");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_GENERATION_DATA2015, "DATA");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_GENERATION_DATA2015, STARTRAMPFACTOR(j), "STARTRAMPFACTOR", "j");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_GENERATION_DATA2015, "DATA");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_GENERATION_DATA2015, SHUTRAMPFACTOR(j), "SHUTRAMPFACTOR", "j");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_GENERATION_DATA2015, "DATA");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_GENERATION_DATA2015, RAMPUPFACTOR(j), "RAMPUPFACTOR", "j");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_GENERATION_DATA2015, "DATA");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_GENERATION_DATA2015, RAMPDOWNFACTOR(j), "RAMPDOWNFACTOR", "j");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_GENERATION_DATA2015, "DATA");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_GENERATION_DATA2015, MAXP_FACTOR(j), "MAXP_FACTOR", "j");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_GENERATION_DATA2015, "DATA");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_GENERATION_DATA2015, MINP_FACTOR(j), "MINP_FACTOR", "j");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_GENERATION_DATA2015, "DATA");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_GENERATION_DATA2015, STARTCOST(j), "STARTCOST", "j");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_GENERATION_DATA2015, "DATA");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_GENERATION_DATA2015, CARBON_INTENSITY(j), "CARBON_INTENSITY", "j");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_GENERATION_DATA2015, "DATA");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_GENERATION_DATA2015, VARCOST(j), "VARCOST", "j");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_GENERATION_DATA2015, "DATA");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_GENERATION_DATA2015, FIXEDCOST(j), "FIXEDCOST", "j");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_GENERATION_DATA2015, "DATA");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_GENERATION_DATA2015, TRANSCOST(j), "TRANSCOST", "j");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_GENERATION_DATA2015, "DATA");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_GENERATION_DATA2015, MIN_UPTIME(j), "MIN_UPTIME", "j");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_GENERATION_DATA2015, "DATA");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_GENERATION_DATA2015, MIN_DOWNTIME(j), "MIN_DOWNTIME", "j");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_GENERATION_DATA2015, "DATA");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_GENERATION_DATA2015, CHARGE_EFFICIENCY(j), "CHARGE_EFFICIENCY", "j");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_GENERATION_DATA2015, "DATA");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_GENERATION_DATA2015, MAX_OUTPUT_HOURS(j), "MAX_OUTPUT_HOURS", "j");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_GENERATION_DATA2015, "DATA");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_GENERATION_DATA2015, MIN_OUTPUT_HOURS(j), "MIN_OUTPUT_HOURS", "j");
+				CheckExcelError;
+			}
+		}
+		Procedure IMPORT_RES_DEMAND_DATA {
+			Body: {
+				!DEMAND, WIND AND SOLAR
+				ExcelSetActiveSheet(ExcelDataIN_RES_DEMAND, "GAS_TS");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_RES_DEMAND, GAS_TS_H(t,hr), "GAS_TS_H", "t", "hr");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_RES_DEMAND, "COAL_TS");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_RES_DEMAND, COAL_TS_H(t,hr), "COAL_TS_H", "t", "hr");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_RES_DEMAND, "OIL_TS");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_RES_DEMAND, OIL_TS_H(t,hr), "OIL_TS_H", "t", "hr");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_RES_DEMAND, "Wind_TS");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_RES_DEMAND, WIND_TS_H(t,hr), "Wind_TS_H", "t", "hr");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_RES_DEMAND, "Wind_EMB");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_RES_DEMAND, WIND_EMB_H(t,hr), "Wind_EMB_H", "t", "hr");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_RES_DEMAND, "Solar_EMB");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_RES_DEMAND, SOLAR_EMB_H(t,hr), "Solar_EMB_H", "t", "hr");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_RES_DEMAND, "HYDRO_TS");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_RES_DEMAND, HYDRO_TS_H(t,hr), "HYDRO_TS_H", "t", "hr");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_RES_DEMAND, "NUCLEAR_TS");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_RES_DEMAND, NUCLEAR_TS_H(t,hr), "NUCLEAR_TS_H", "t", "hr");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_RES_DEMAND, "BIOMASS_TS");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_RES_DEMAND, BIOMASS_TS_H(t,hr), "BIOMASS_TS_H", "t", "hr");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_RES_DEMAND, "INTERCONN_FLOW");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_RES_DEMAND, INTERCONN_FLOW_H(t,hr), "INTERCONN_FLOW_H", "t", "hr");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_RES_DEMAND, "PS_CHARGE");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_RES_DEMAND, PS_CHARGE_H(t,hr), "PS_CHARGE_H", "t", "hr");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_RES_DEMAND, "PS_DISCHARGE");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_RES_DEMAND, PS_DISCHARGE_H(t,hr), "PS_DISCHARGE_H", "t", "hr");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_RES_DEMAND, "ND_FORECAST_ERR");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_RES_DEMAND, ND_FORECAST_ERR_H(t,hr), "ND_FORECAST_ERR_H", "t", "hr");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_RES_DEMAND, "WIND_FORECAST_ERR");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_RES_DEMAND, WIND_FORECAST_ERR_H(t,hr), "WIND_FORECAST_ERR_H", "t", "hr");
+				CheckExcelError;
+				
+				ExcelSaveWorkbook(ExcelDataIN_RES_DEMAND);
+				ExcelCloseWorkbook(ExcelDataIN_RES_DEMAND,0);
+			}
+		}
+		Procedure IMPORT_OTHER_DATA {
+			Body: {
+				!PRICES
+				ExcelSetActiveSheet(ExcelDataIN_OTHER_DATA, "SEM_Price");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_OTHER_DATA, SEM_EXT_PRICE_H(t,hr), "SEM_PRICE_H", "t", "hr");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_OTHER_DATA, "NL_Price");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_OTHER_DATA, NL_EXT_PRICE_H(t,hr), "NL_PRICE_H", "t", "hr");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_OTHER_DATA, "FR_Price");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_OTHER_DATA, FR_EXT_PRICE_H(t,hr), "FR_PRICE_H", "t", "hr");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_OTHER_DATA, "NO_Price");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_OTHER_DATA, NO_EXT_Price_H(t,hr), "NO_PRICE_H", "t", "hr");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_OTHER_DATA, "BE_Price");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_OTHER_DATA, BE_EXT_Price_H(t,hr), "BE_PRICE_H", "t", "hr");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_OTHER_DATA, "UK_Price");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_OTHER_DATA, UK_EXT_Price_H(t,hr), "UK_PRICE_H", "t", "hr");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_OTHER_DATA, "Gas2015_Price");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_OTHER_DATA, GASPRICE_H(t,hr), "Gas2015_Price_H", "t", "hr");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_OTHER_DATA, "Coal2015_Price");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_OTHER_DATA, COALPRICE_H(t,hr), "Coal2015_Price_H", "t", "hr");
+				CheckExcelError;
+				ExcelSetActiveSheet(ExcelDataIN_OTHER_DATA, "Oil2015_Price");
+				ExcelStatus := ExcelRetrieveTable(ExcelDataIN_OTHER_DATA, OILPRICE_H(t,hr), "Oil2015_Price_H", "t", "hr");
+				CheckExcelError;
+				
+				ExcelSaveWorkbook(ExcelDataIN_OTHER_DATA);
+				ExcelCloseWorkbook(ExcelDataIN_OTHER_DATA,0);
+			}
+		}
+	}
+	Section RESULTS {
+		DeclarationSection RESULTS_PARAMETERS {
+			Parameter P_ALL {
+				IndexDomain: (j,t,hr);
+			}
+			Parameter SPIN_UP_ALL {
+				IndexDomain: (j,t,hr);
+			}
+			Parameter NON_SPIN_UP_ALL {
+				IndexDomain: (j,t,hr);
+			}
+			Parameter SPIN_DOWN_ALL {
+				IndexDomain: (j,t,hr);
+			}
+			Parameter SPIN_UP_STOR_ALL {
+				IndexDomain: (j,t,hr);
+			}
+			Parameter SPIN_DOWN_STOR_ALL {
+				IndexDomain: (j,t,hr);
+			}
+			Parameter U_ALL {
+				IndexDomain: (j,t,hr);
+			}
+			Parameter V_ALL {
+				IndexDomain: (j,t,hr);
+				Range: binary;
+			}
+			Parameter W_ALL {
+				IndexDomain: (j,t,hr);
+			}
+			Parameter X_ALL {
+				IndexDomain: (j,t,hr);
+			}
+			Parameter CHARGE_ALL {
+				IndexDomain: (j,t,hr);
+			}
+			Parameter DISCHARGE_ALL {
+				IndexDomain: (j,t,hr);
+			}
+			Parameter STORAGE_LEVEL_UNITS_ALL {
+				IndexDomain: (j,t,hr);
+			}
+			Parameter UPTIME_PRIOR_ALL {
+				IndexDomain: (j,hr);
+			}
+			Parameter DOWNTIME_PRIOR_ALL {
+				IndexDomain: (j,hr);
+			}
+			Parameter WHOLESALE_PRICE {
+				IndexDomain: (t,hr);
+			}
+			Parameter SPRICE_RESUP {
+				IndexDomain: (t,hr);
+			}
+			Parameter SPRICE_RESDOWN {
+				IndexDomain: (t,hr);
+			}
+			Parameter SPRICE_CURTAILMENT {
+				IndexDomain: (t,hr);
+			}
+			Parameter LS_SYSDEMAND {
+				IndexDomain: (t,hr);
+			}
+			Parameter LS_RESUP_ALL {
+				IndexDomain: (t,hr);
+			}
+			Parameter LS_RESDOWN_ALL {
+				IndexDomain: (t,hr);
+			}
+			Parameter CURTAILMENT_ALL {
+				IndexDomain: (t,hr);
+			}
+		}
+	}
+	Section OTHER_PROCEDURES {
+		DeclarationSection SaveDataProcedure {
+			StringParameter CaseName;
+			ElementParameter CaseReference {
+				Range: AllCases;
+			}
+		}
+		DeclarationSection LoadInitialDataProcedure {
+			StringParameter InitialCase {
+				Definition: "INPUT_DATA_180809";
+			}
+			ElementParameter SelectedCase {
+				Range: AllCases;
+			}
+		}
+		Procedure LoadInitialCase {
+			Body: {
+				!EMPTY;
+				
+				casenew;
+				
+				casefind(InitialCase,SelectedCase);
+				
+				CaseSetChangedStatus(0,1) ;
+				
+				CaseLoadCurrent(SelectedCase,0,0);
+			}
+		}
+		Procedure SaveCase {
+			Body: {
+				!First try to find a case with the name indicated by CaseName. If AIMMS
+				!can find this, it will store a reference to this case in the element
+				!parameter CaseReference
+				if ( not CaseFind( CaseName, CaseReference ) ) then
+				    !If no case with the name indicated by CaseName could be found, then
+				    !we try to create a case with this name. After creating the case, AIMMS
+				    !will store a reference in the CaseReference element parameter to the
+				    !newly created case
+				    if ( not CaseCreate( CaseName, CaseReference ) ) then
+				    	!If there was an error while creating the case, notify the developer
+				    	!by raising an error. If the raised error is not caught, AIMMS will
+				    	!display it in the error window.
+				        raise error "Could not create case with name " + CaseName ;
+				    endif;
+				endif;
+				!If we got here, it means either a case with the indicated case name could be
+				!found, or it was created. Now instruct AIMMS to set this case to be the
+				!current case
+				CaseSetCurrent( CaseReference );
+				!And then instruct AIMMS to save the case
+				CaseSave( 0 );
+			}
+		}
+		Procedure EmptyData {
+			Body: {
+				!EMPTY ALLVARIABLES, ALLSETS, ALLPARAMETERS, ALLCONSTRAINTS;
+				
+				empty U_INIT;
+			}
+		}
+	}
+}
